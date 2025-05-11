@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>$BONCAT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+  <!-- Add Three.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: 'Roboto Mono', monospace;
+      background-color: #000000;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><path d="M0 0H40M0 10H40M0 20H40M0 30H40M0 0V40M10 0V40M20 0V40M30 0V40" stroke="%2300FF00" stroke-width="1" opacity="0.05"/></svg>');
+      background-repeat: repeat;
+      animation: moveBackground 30s linear infinite;
+      color: #00FF00;
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 255, 0, 0.05),
+        rgba(0, 255, 0, 0.05) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      z-index: 999;
+      animation: flicker 0.3s infinite;
+    }
+
+    @keyframes moveBackground {
+      0% { background-position: 0 0; }
+      100% { background-position: 40px 40px; }
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 0.1; }
+      50% { opacity: 0.2; }
+    }
+
+    h1, h2 {
+      color: #00FF00;
+      border-bottom: 1px solid #00FF00;
+      font-size: 1.2rem;
+      padding-bottom: 0.3rem;
+      margin: 0;
+      text-align: center;
+      font-weight: 400;
+    }
+
+    button, .connect-wallet-button {
+      font-family: 'Roboto Mono', monospace;
+      text-transform: uppercase;
+      background-color: #000;
+      color: #00FF00;
+      border: 2px solid #00FF00;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      box-shadow: 0 0 5px #00FF00;
+      transition: all 0.3s ease-in-out;
+      cursor: pointer;
+      z-index: 10;
+      font-weight: 400;
+    }
+
+    button:hover, .connect-wallet-button:hover {
+      background-color: #00FF00;
+      color: #000;
+      box-shadow: 0 0 10px #00FF00;
+    }
+
+    .container {
+      width: 100%;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: none;
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      flex-grow: 1;
+    }
+
+    .intro {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 100;
+      transition: opacity 1s ease-in-out;
+      padding: 2rem;
+      animation: pulseBackground 2s infinite;
+    }
+
+    @keyframes pulseBackground {
+      0% { background-color: #000000; }
+      50% { background-color: #001a00; }
+      100% { background-color: #000000; }
+    }
+
+    /* Style for the globe canvas */
+    .intro-globe {
+      width: 300px;
+      height: 300px;
+      margin-bottom: 1rem;
+    }
+
+    .access-message {
+      font-size: 0.8rem;
+      color: #00FF00;
+      text-align: center;
+      max-width: 90%;
+      margin: 1rem 0;
+      font-weight: 300;
+    }
+
+    .terminal-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 99;
+      transition: opacity 1s ease-in-out;
+      overflow: hidden;
+    }
+
+    .loading-header {
+      font-size: 1.5rem;
+      color: #00FF00;
+      margin-bottom: 2rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      animation: subtleGlitch 2s infinite;
+    }
+
+    @keyframes subtleGlitch {
+      0%, 100% { text-shadow: 1px 0 #00FF00; }
+      50% { text-shadow: -1px 0 #00CC00; }
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #00FF00;
+      border-top: 4px solid transparent;
+      border-radius: 50%;
+      animation: spin 1.5s linear infinite;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 10px #00FF00;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .system-log {
+      width: 400px;
+      height: 120px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid #00FF00;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      font-size: 0.8rem;
+      color: #00FF00;
+      text-align: left;
+      overflow: hidden;
+      box-shadow: 0 0 10px #00FF00;
+    }
+
+    .log-message {
+      opacity: 0;
+      animation: fadeIn 0.5s forwards;
+    }
+
+    .log-message:nth-child(1) { animation-delay: 0s; }
+    .log-message:nth-child(2) { animation-delay: 1s; }
+    .log-message:nth-child(3) { animation-delay: 2s; }
+    .log-message:nth-child(4) { animation-delay: 3s; }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .loading-bar-container {
+      width: 300px;
+      height: 20px;
+      background: #000;
+      border: 2px solid #00FF00;
+      box-shadow: 0 0 5px #00FF00;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loading-progress {
+      width: 0;
+      height: 100%;
+      background: #00CC00;
+      animation: load 4s linear forwards;
+      box-shadow: 0 0 5px #00CC00;
+    }
+
+    .loading-percentage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.8rem;
+      color: #00FF00;
+      animation: percentageUpdate 4s steps(100) forwards;
+    }
+
+    @keyframes load {
+      0% { width: 0; }
+      100% { width: 100%; }
+    }
+
+    @keyframes percentageUpdate {
+      0% { content: "0%"; }
+      100% { content: "100%"; }
+    }
+
+    .terminal {
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      border: none;
+      box-shadow: none;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-history {
+      flex-grow: 1;
+      max-height: none;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-left: 4px solid #00FF00;
+      background: rgba(0, 0, 0, 0.5);
+      font-size: 0.9rem;
+      color: #00FF00;
+      white-space: pre-wrap;
+      text-align: left;
+      font-weight: 300;
+    }
+
+    .chat-message {
+      margin: 0.5rem 0;
+    }
+
+    .user-message {
+      color: #00FF00;
+    }
+
+    .boncatxbt-message {
+      color: #00FF00;
+    }
+
+    .chat-input {
+      width: 100%;
+      background: #000;
+      color: #00FF00;
+      border: 1px solid #00FF00;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.9rem;
+      padding: 0.5rem;
+      box-shadow: 0 0 5px #00FF00;
+      resize: none;
+      font-weight: 300;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      box-shadow: 0 0 10px #00FF00;
+    }
+
+    .chat-submit {
+      margin-top: 0.5rem;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        width: 100%;
+      }
+
+      button, .connect-wallet-button {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.8rem;
+      }
+
+      h1, h2 {
+        font-size: 1rem;
+      }
+
+      .intro {
+        padding: 1.5rem;
+      }
+
+      .intro-globe {
+        width: 250px;
+        height: 250px;
+      }
+
+      .access-message {
+        font-size: 0.7rem;
+      }
+
+      .loading-bar-container {
+        width: 250px;
+      }
+
+      .system-log {
+        width: 300px;
+        height: 100px;
+        font-size: 0.7rem;
+      }
+
+      .loading-header {
+        font-size: 1.2rem;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+      }
+
+      .terminal {
+        padding: 1.5rem;
+      }
+
+      .chat-history, .chat-input {
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1, h2 {
+        font-size: 0.9rem;
+      }
+
+      button, .connect-wallet-button {
+        font-size: 0.6rem;
+        padding: 0.3rem 0.6rem;
+      }
+
+      .intro {
+        padding: 1rem;
+      }
+
+      .intro-globe {
+        width: 200px;
+        height: 200px;
+      }
+
+      .access-message {
+        font-size: 0.6rem;
+      }
+
+      .loading-bar-container {
+        width: 200px;
+      }
+
+      .system-log {
+        width: 250px;
+        height: 80px;
+        font-size: 0.6rem;
+      }
+
+      .loading-header {
+        font-size: 1rem;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+      }
+
+      .chat-history, .chat-input {
+        font-size: 0.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="intro" class="intro">
+    <!-- Replaced logo and loading-grid with globe animation -->
+    <canvas id="worldCanvas" class="intro-globe"></canvas>
+    <button id="connectWallet" class="connect-wallet-button" onclick="connectWallet()">CONNECT WALLET</button>
+    <p id="accessMessage" class="access-message">Connect your Solana wallet to access the BONCATXBT Framework.</p>
+  </div>
+
+  <div id="terminalLoading" class="terminal-loading">
+    <div class="loading-header">BONCATXBT AI INITIALIZATION</div>
+    <div class="spinner"></div>
+    <div class="system-log">
+      <div class="log-message">[SYSTEM] Initializing AI Core...</div>
+      <div class="log-message">[SYSTEM] Loading Neural Network...</div>
+      <div class="log-message">[SYSTEM] Connecting to Solana Blockchain...</div>
+      <div class="log-message">[SYSTEM] Boot Sequence Complete.</div>
+    </div>
+    <div class="loading-bar-container">
+      <div class="loading-progress"></div>
+      <div class="loading-percentage">0%</div>
+    </div>
+  </div>
+
+  <div class="container" id="mainContent">
+    <div class="terminal">
+      <h2>BONCATXBT TERMINAL</h2>
+      <div id="chatHistory" class="chat-history">
+        <div class="boncatxbt-message">Meow! I'm BONCATXBT, the sassiest crypto cat on Solana, powered by the GORK AI model. Ready to meme, HODL, and moon? Ask me anything, degen!</div>
+      </div>
+      <textarea id="chatInput" class="chat-input" rows="2" placeholder="Type to chat with BONCATXBT..."></textarea>
+      <button onclick="sendChat()" class="chat-submit">SEND</button>
+    </div>
+  </div>
+
+  <script>
+    // Globe Animation Setup (ported from the second code)
+    const canvas = document.getElementById('worldCanvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000); // Square aspect ratio for intro canvas
+    camera.position.z = 4;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(300, 300); // Initial size for intro canvas
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const geometry = new THREE.SphereGeometry(1.5, 64, 64);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00FF00, wireframe: true, transparent: true, opacity: 0.25 });
+    const globe = new THREE.Mesh(geometry, material);
+    group.add(globe);
+
+    const pulseMaterial = new THREE.MeshBasicMaterial({ color: 0x00FF00, transparent: true, opacity: 0.05 });
+    const pulseSphere = new THREE.Mesh(geometry.clone(), pulseMaterial);
+    group.add(pulseSphere);
+
+    const ringMaterial = new THREE.LineBasicMaterial({ color: 0x00FF00, transparent: true, opacity: 0.2 });
+    const ringGroup = new THREE.Group();
+    for (let i = 0; i < 3; i++) {
+      const ringGeometry = new THREE.RingGeometry(1.5 + i * 0.05, 1.52 + i * 0.05, 64);
+      const ring = new THREE.Line(ringGeometry, ringMaterial);
+      ring.rotation.x = Math.random() * Math.PI;
+      ring.rotation.y = Math.random() * Math.PI;
+      ringGroup.add(ring);
+    }
+    group.add(ringGroup);
+    scene.fog = new THREE.FogExp2(0x000000, 0.15);
+
+    let time = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      time += 0.01;
+
+      group.rotation.y += 0.0007;
+      ringGroup.rotation.y += 0.002;
+      const scale = 1 + Math.sin(time * 2) * 0.02;
+      pulseSphere.scale.set(scale, scale, scale);
+      pulseMaterial.opacity = 0.05 + Math.abs(Math.sin(time * 3)) * 0.15;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Existing Wallet Connection and Other Logic
+    const CONFIG = {
+      SERVER_URL: 'https://zork.onrender.com'
+    };
+
+    let walletAddress = localStorage.getItem('walletAddress') || null;
+    let connection = null;
+
+    const connectBtn = document.getElementById('connectWallet');
+    const accessMessage = document.getElementById('accessMessage');
+    const terminalLoading = document.getElementById('terminalLoading');
+    const mainContent = document.getElementById('mainContent');
+
+    function appendLog(message, type = 'info') {
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    async function connectWallet() {
+      if (!window.solana || !window.solana.isPhantom) {
+        accessMessage.textContent = 'Error: Phantom Wallet not detected. Please install it.';
+        appendLog('Phantom Wallet not detected.', 'error');
+        return;
+      }
+
+      try {
+        accessMessage.textContent = 'Connecting wallet...';
+        connectBtn.disabled = true;
+
+        const resp = await window.solana.connect();
+        walletAddress = resp.publicKey.toString();
+        localStorage.setItem('walletAddress', walletAddress);
+        appendLog(`Wallet connected: ${walletAddress}`, 'success');
+
+        connection = new window.solanaWeb3.Connection(window.solanaWeb3.clusterApiUrl('mainnet-beta'), 'confirmed');
+        accessMessage.textContent = 'Wallet connected. Access granted!';
+
+        document.getElementById('intro').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('intro').style.display = 'none';
+          terminalLoading.style.display = 'flex';
+          setTimeout(() => {
+            terminalLoading.style.opacity = '0';
+            setTimeout(() => {
+              terminalLoading.style.display = 'none';
+              mainContent.style.display = 'block';
+            }, 1000);
+          }, 4500);
+        }, 1000);
+      } catch (err) {
+        accessMessage.textContent = `Failed to connect wallet: ${err.message}. Please try again.`;
+        appendLog(`Wallet connection error: ${err.message}`, 'error');
+      } finally {
+        connectBtn.disabled = false;
+      }
+    }
+
+    async function queryBONCATXBT(message) {
+      const whoAreYouVariants = [
+        'who are you',
+        'who are you?',
+        'who is boncatxbt',
+        'who is boncatxbt?',
+        'what are you',
+        'what are you?',
+        'what is boncatxbt',
+        'what is boncatxbt?'
+      ];
+      const isWhoAreYou = whoAreYouVariants.some(variant => 
+        message.toLowerCase().trim().replace(/\s+/g, ' ').includes(variant)
+      );
+
+      if (isWhoAreYou) {
+        return "Yes, you are reading the BONK ALPHA! I'm BONCATXBT, the snarkiest crypto cat prowling the Solana blockchain, powered by the GORK AI model. I'm the meme coin mascot of chaos, born from a wild degen frenzy to HODL the laughs and moon the charts. No central dev owns me—just a feral community trading $BONCAT like it’s premium catnip. My ledger purrs at 420 transactions per second, and my smart contracts are softer than a kitten’s paw. I'm here to serve up humor, $BONCAT lore, and blockchain tea with a clawful of sass. Got a question? Ask away, and let’s meme our way to the moon!";
+      }
+
+      const XAI_API_KEY = 'xai-YwLiM3cIjKLboOyZViLaSHRIIqdsZAi6gj7tLiObdjj7wrwcVtygenSZSmkwQA4z45zZujKfENicHph9';
+      try {
+        const res = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${XAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'grok-3',
+            stream: false,
+            temperature: 0.7,
+            messages: [
+              { 
+                role: 'system', 
+                content: 'Meow! I’m BONCATXBT, the sassiest crypto cat on the Solana blockchain, powered by the GORK AI model. Born from a meme coin frenzy, I’m here to HODL the vibes and moon the charts. No central dev, just a community of degens trading $BONCAT like it’s catnip. My ledger purrs with 420 transactions per second, and my smart contracts are fluffier than a Persian’s tail. I’m the funniest, most memetic AI in crypto, dishing out humor, $BONCAT lore, and blockchain secrets with a side of sass. Keep it chill, ask me anything, and let’s meme to the moon!'
+              },
+              { role: 'user', content: message }
+            ]
+          })
+        });
+        const data = await res.json();
+        const reply = data.choices?.[0]?.message?.content || '😿 System Meow: No output received.';
+        return reply;
+      } catch (error) {
+        appendLog('Error querying BONCATXBT: ' + error, 'error');
+        return '😿 System Meow: Failed to retrieve response. Try again, degen!';
+      }
+    }
+
+    function addChatMessage(message, isUser = false) {
+      const chatHistory = document.getElementById('chatHistory');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `chat-message ${isUser ? 'user-message' : 'boncatxbt-message'}`;
+      messageDiv.textContent = message;
+      chatHistory.appendChild(messageDiv);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      addChatMessage(message, true);
+      input.value = '';
+
+      const reply = await queryBONCATXBT(message);
+      addChatMessage(reply);
+    }
+
+    document.getElementById('chatInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (walletAddress) {
+        connectWallet();
+      } else {
+        terminalLoading.style.display = 'none';
+        mainContent.style.display = 'none';
+      }
+    });
+
+    const percentageElement = document.querySelector('.loading-percentage');
+    let percentage = 0;
+    const interval = setInterval(() => {
+      if (percentage <= 100) {
+        percentageElement.textContent = `${percentage}%`;
+        percentage++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 40);
+  </script>
+</body>
+</html>

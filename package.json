@@ -1,0 +1,49 @@
+{
+  "name": "morvox-backend",
+  "version": "1.1.1",
+  "description": "Backend server for MORVOX to fetch X user data, proxy Pump.fun API for token sentiment, handle Discord signals for token sentiment analysis, support Solana token-gating, and verify NFT ownership",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start-discord-bot": "node discord-bot.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@solana/spl-token": "^0.4.8",
+    "@solana/web3.js": "^1.95.3",
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "discord.js": "^14.16.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "keywords": [
+    "morvox",
+    "proxy",
+    "cors",
+    "pumpfun",
+    "x-api",
+    "solana",
+    "discord",
+    "token-sentiment",
+    "token-gating",
+    "nft-verification"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/morvox-backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/morvox-backend/issues"
+  },
+  "homepage": "https://github.com/your-username/morvox-backend#readme",
+  "engines": {
+    "node": "18.x"
+  }
+}
